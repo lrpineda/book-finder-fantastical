@@ -1,62 +1,44 @@
 import React, { useState } from 'react';
+import { useMutation } from '@apollo/client';
+// eslint-disable-next-line
 import { Form, Button, Alert } from 'react-bootstrap';
-
-import { createUser } from '../utils/API';
+import { ADD_USER } from '../utils/mutations';
 import Auth from '../utils/auth';
 
 const SignupForm = () => {
   // set initial form state
   const [userFormData, setUserFormData] = useState({ username: '', email: '', password: '' });
   // set state for form validation
-  const [validated] = useState(false);
-  // set state for alert
-  const [showAlert, setShowAlert] = useState(false);
+  // eslint-disable-next-line
+  const [addUser, { error }] = useMutation(ADD_USER);
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setUserFormData({ ...userFormData, [name]: value });
-  };
+  }
 
-  const handleFormSubmit = async (event) => {
-    event.preventDefault();
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    try {
-      const response = await createUser(userFormData);
-
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { token, user } = await response.json();
-      console.log(user);
-      Auth.login(token);
+    try{
+      const { data } = await addUser({
+        variables: { ...userFormData },
+      });
+      Auth.login(data.addUser.token);
     } catch (err) {
       console.error(err);
-      setShowAlert(true);
     }
-
-    setUserFormData({
-      username: '',
-      email: '',
-      password: '',
-    });
   };
 
   return (
     <>
       {/* This is needed for the validation functionality above */}
-      <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
+      <Form  onSubmit={handleFormSubmit}>
         {/* show alert if server response is bad */}
-        <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
+        {/* <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
           Something went wrong with your signup!
-        </Alert>
+        </Alert> */}
 
         <Form.Group>
           <Form.Label htmlFor='username'>Username</Form.Label>
@@ -64,7 +46,7 @@ const SignupForm = () => {
             type='text'
             placeholder='Your username'
             name='username'
-            onChange={handleInputChange}
+            onChange={handleChange}
             value={userFormData.username}
             required
           />
@@ -77,7 +59,7 @@ const SignupForm = () => {
             type='email'
             placeholder='Your email address'
             name='email'
-            onChange={handleInputChange}
+            onChange={handleChange}
             value={userFormData.email}
             required
           />
@@ -90,7 +72,7 @@ const SignupForm = () => {
             type='password'
             placeholder='Your password'
             name='password'
-            onChange={handleInputChange}
+            onChange={handleChange}
             value={userFormData.password}
             required
           />
